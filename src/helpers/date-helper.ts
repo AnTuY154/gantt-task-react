@@ -75,7 +75,8 @@ export const ganttDateRange = (
   preStepsCount: number
 ) => {
   let newStartDate: Date = tasks[0].start;
-  let newEndDate: Date = tasks[0].start;
+  let newEndDate: Date = tasks[0].end;
+
   for (const task of tasks) {
     if (task.start < newStartDate) {
       newStartDate = task.start;
@@ -83,7 +84,19 @@ export const ganttDateRange = (
     if (task.end > newEndDate) {
       newEndDate = task.end;
     }
+
+    if (task.startActual && task.endActual) {
+      if (task.startActual < newStartDate) {
+        newStartDate = task.startActual;
+      }
+      if (task.endActual > newEndDate) {
+        newEndDate = task.endActual;
+      }
+    }
   }
+  // }
+
+  // Điều chỉnh phạm vi ngày dựa trên viewMode
   switch (viewMode) {
     case ViewMode.Year:
       newStartDate = addToDate(newStartDate, -1, "year");
@@ -137,7 +150,14 @@ export const ganttDateRange = (
       newEndDate = startOfDate(newEndDate, "day");
       newEndDate = addToDate(newEndDate, 1, "day");
       break;
+    case ViewMode.WeekDay:
+      newStartDate = startOfDate(newStartDate, "day");
+      newStartDate = addToDate(newStartDate, -1 * preStepsCount, "day");
+      newEndDate = startOfDate(newEndDate, "day");
+      newEndDate = addToDate(newEndDate, 19, "day");
+      break;
   }
+
   return [newStartDate, newEndDate];
 };
 
@@ -174,6 +194,9 @@ export const seedDates = (
       case ViewMode.Hour:
         currentDate = addToDate(currentDate, 1, "hour");
         break;
+      case ViewMode.WeekDay:
+        currentDate = addToDate(currentDate, 1, "day");
+        break;
     }
     dates.push(currentDate);
   }
@@ -206,6 +229,28 @@ export const getLocalDayOfWeek = (
   return bottomValue;
 };
 
+export const getLocalMonthYear = (date: Date, locale: string): string => {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+  });
+
+  const formattedParts = formatter.formatToParts(date);
+
+  let year = "";
+  let month = "";
+
+  for (const part of formattedParts) {
+    if (part.type === "year") {
+      year = part.value;
+    }
+    if (part.type === "month") {
+      month = part.value.padStart(2, "0");
+    }
+  }
+
+  return `${year}.${month}`;
+};
 /**
  * Returns monday of current week
  * @param date date for modify
@@ -238,4 +283,31 @@ export const getWeekNumberISO8601 = (date: Date) => {
 
 export const getDaysInMonth = (month: number, year: number) => {
   return new Date(year, month + 1, 0).getDate();
+};
+
+
+export const startOfISOWeek = (date: Date): Date => {
+  const day = date.getDay();
+  const diff = (day === 0 ? 6 : day - 1); // Nếu là Chủ Nhật (0), thì lùi 6 ngày, nếu các ngày khác thì lùi theo (day - 1)
+  const start = new Date(date);
+  start.setDate(date.getDate() - diff); // Lùi về Thứ Hai
+  start.setHours(0, 0, 0, 0); // Đặt thời gian về 00:00:00
+  return start;
+};
+
+// Hàm để lấy ngày kết thúc tuần theo chuẩn ISO (Chủ Nhật là ngày cuối tuần)
+export const endOfISOWeek = (date: Date): Date => {
+  const startOfThisWeek = startOfISOWeek(date); // Ngày bắt đầu tuần
+  const end = new Date(startOfThisWeek);
+  end.setDate(startOfThisWeek.getDate() + 6); // Cộng thêm 6 ngày để có ngày kết thúc (Chủ Nhật)
+  end.setHours(23, 59, 59, 999); // Đặt thời gian về 23:59:59
+  return end;
+};
+
+// Hàm để lấy số tuần ISO trong năm
+export const getISOWeekNumber = (date: Date): number => {
+  const startOfYear = new Date(date.getFullYear(), 0, 1);
+  const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.ceil((days + 1) / 7);
+  return weekNumber;
 };

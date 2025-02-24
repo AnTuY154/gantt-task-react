@@ -8,14 +8,46 @@ export enum ViewMode {
   Month = "Month",
   QuarterYear = "QuarterYear",
   Year = "Year",
+  WeekDay = "WeekDay",
 }
-export type TaskType = "task" | "milestone" | "project";
+
+export interface IDateActual {
+  date: Date;
+  time: number;
+  isDelay?: boolean;
+  onClick?: () => void;
+}
+
+export interface estimateEffort {
+  from: Date;
+  to: Date;
+  effort: number;
+}
+
+export interface actualEffort {
+  from: Date;
+  to: Date;
+  effort: number;
+  color?: string;
+}
+
+export type TaskType =
+  | "task"
+  | "milestone"
+  | "project"
+  | "projectdashboard"
+  | "projecteffort"
+  | "projecttaskcategory"
+  | "projectworkplan";
 export interface Task {
   id: string;
   type: TaskType;
   name: string;
   start: Date;
   end: Date;
+  startActual?: Date;
+  endActual?: Date;
+  dateActual?: IDateActual[];
   /**
    * From 0 to 100
    */
@@ -31,6 +63,9 @@ export interface Task {
   dependencies?: string[];
   hideChildren?: boolean;
   displayOrder?: number;
+  estimateEffort?: estimateEffort[];
+  actualEffort?: actualEffort[];
+  [key: string]: any;
 }
 
 export interface EventOption {
@@ -140,6 +175,15 @@ export interface StylingOption {
   }>;
 }
 
-export interface GanttProps extends EventOption, DisplayOption, StylingOption {
+export interface CustomProps {
+  showEffort?: boolean;
+  resetSelectTask?: boolean;
+}
+
+export interface GanttProps
+  extends EventOption,
+    DisplayOption,
+    StylingOption,
+    CustomProps {
   tasks: Task[];
 }

@@ -44,7 +44,6 @@ export const TaskListTableDefault: React.FC<{
     () => toLocaleDateStringFactory(locale),
     [locale]
   );
-
   return (
     <div
       className={styles.taskListWrapper}

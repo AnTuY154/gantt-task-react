@@ -99,6 +99,7 @@ const convertToBarTask = (
       );
       break;
     case "project":
+    case "projectworkplan":
       barTask = convertToBar(
         task,
         index,
@@ -153,12 +154,25 @@ const convertToBar = (
 ): BarTask => {
   let x1: number;
   let x2: number;
+
+  let x3: number = 0;
+  let x4: number = 0;
+
   if (rtl) {
     x2 = taskXCoordinateRTL(task.start, dates, columnWidth);
     x1 = taskXCoordinateRTL(task.end, dates, columnWidth);
+    if (task?.startActual && task?.endActual) {
+      x4 = taskXCoordinateRTL(task.startActual, dates, columnWidth);
+      x3 = taskXCoordinateRTL(task.endActual, dates, columnWidth);
+    }
   } else {
     x1 = taskXCoordinate(task.start, dates, columnWidth);
     x2 = taskXCoordinate(task.end, dates, columnWidth);
+
+    if (task?.startActual && task?.endActual) {
+      x3 = taskXCoordinate(task.startActual, dates, columnWidth);
+      x4 = taskXCoordinate(task.endActual, dates, columnWidth);
+    }
   }
   let typeInternal: TaskTypeInternal = task.type;
   if (typeInternal === "task" && x2 - x1 < handleWidth * 2) {
@@ -173,7 +187,10 @@ const convertToBar = (
     rtl
   );
   const y = taskYCoordinate(index, rowHeight, taskHeight);
-  const hideChildren = task.type === "project" ? task.hideChildren : undefined;
+  const hideChildren =
+    task.type === "project" || task.type === "projectworkplan"
+      ? task.hideChildren
+      : undefined;
 
   const styles = {
     backgroundColor: barBackgroundColor,
@@ -187,6 +204,8 @@ const convertToBar = (
     typeInternal,
     x1,
     x2,
+    x3: x3,
+    x4: x4,
     y,
     index,
     progressX,
@@ -246,7 +265,11 @@ const convertToMilestone = (
   };
 };
 
-const taskXCoordinate = (xDate: Date, dates: Date[], columnWidth: number) => {
+export const taskXCoordinate = (
+  xDate: Date,
+  dates: Date[],
+  columnWidth: number
+) => {
   const index = dates.findIndex(d => d.getTime() >= xDate.getTime()) - 1;
 
   const remainderMillis = xDate.getTime() - dates[index].getTime();
@@ -255,7 +278,8 @@ const taskXCoordinate = (xDate: Date, dates: Date[], columnWidth: number) => {
   const x = index * columnWidth + percentOfInterval * columnWidth;
   return x;
 };
-const taskXCoordinateRTL = (
+
+export const taskXCoordinateRTL = (
   xDate: Date,
   dates: Date[],
   columnWidth: number

@@ -17,7 +17,8 @@ export const BarSmall: React.FC<TaskItemProps> = ({
     task.y,
     task.height
   );
-  return (
+
+  return !task.isAction ? (
     <g className={styles.barWrapper} tabIndex={0}>
       <BarDisplay
         x={task.x1}
@@ -44,5 +45,7 @@ export const BarSmall: React.FC<TaskItemProps> = ({
         )}
       </g>
     </g>
+  ) : (
+    <g></g>
   );
 };

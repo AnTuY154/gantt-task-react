@@ -5,6 +5,8 @@ export interface BarTask extends Task {
   typeInternal: TaskTypeInternal;
   x1: number;
   x2: number;
+  x3?: number;
+  x4?: number;
   y: number;
   height: number;
   progressX: number;
@@ -20,4 +22,4 @@ export interface BarTask extends Task {
   };
 }
 
-export type TaskTypeInternal = TaskType | "smalltask";
+export type TaskTypeInternal = TaskType | "smalltask" | "projectdashboard" | "projecteffort"| "projecttaskcategory" | "projectworkplan";

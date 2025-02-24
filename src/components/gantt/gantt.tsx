@@ -65,6 +65,8 @@ export const Gantt: React.FunctionComponent<GanttProps> = ({
   onDelete,
   onSelect,
   onExpanderClick,
+  showEffort,
+  resetSelectTask,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
@@ -97,6 +99,10 @@ export const Gantt: React.FunctionComponent<GanttProps> = ({
   const [scrollY, setScrollY] = useState(0);
   const [scrollX, setScrollX] = useState(-1);
   const [ignoreScrollEvent, setIgnoreScrollEvent] = useState(false);
+
+  useEffect(() => {
+    setSelectedTask(undefined);
+  }, [resetSelectTask]);
 
   // task change events
   useEffect(() => {
@@ -409,6 +415,7 @@ export const Gantt: React.FunctionComponent<GanttProps> = ({
   const barProps: TaskGanttContentProps = {
     tasks: barTasks,
     dates: dateSetup.dates,
+    viewMode: viewMode,
     ganttEvent,
     selectedTask,
     rowHeight,
@@ -459,12 +466,18 @@ export const Gantt: React.FunctionComponent<GanttProps> = ({
       >
         {listCellWidth && <TaskList {...tableProps} />}
         <TaskGantt
-          gridProps={gridProps}
+          gridProps={{
+            ...gridProps,
+            selectedTask: selectedTask,
+            setSelectedTask: handleSelectedTask,
+            onClick: onClick,
+          }}
           calendarProps={calendarProps}
           barProps={barProps}
           ganttHeight={ganttHeight}
           scrollY={scrollY}
           scrollX={scrollX}
+          showEffort={showEffort}
         />
         {ganttEvent.changedTask && (
           <Tooltip

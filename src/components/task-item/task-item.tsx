@@ -6,8 +6,13 @@ import { BarSmall } from "./bar/bar-small";
 import { Milestone } from "./milestone/milestone";
 import { Project } from "./project/project";
 import style from "./task-list.module.css";
+import { ProjectDashboard } from "./project-dasboard/project-dashboard";
+import { ProjectEffort } from "./project-effort/project-effort";
+import { ViewMode } from "../../types/public-types";
+import { ProjectTaskCategory } from "./project-task-category/project-task-category";
 
 export type TaskItemProps = {
+  tasks: BarTask[];
   task: BarTask;
   arrowIndent: number;
   taskHeight: number;
@@ -21,6 +26,10 @@ export type TaskItemProps = {
     selectedTask: BarTask,
     event?: React.MouseEvent | React.KeyboardEvent
   ) => any;
+  columnWidth?: number;
+  viewMode?: ViewMode;
+  svgWidth?: number;
+  rowHeight?: number;
 };
 
 export const TaskItem: React.FC<TaskItemProps> = props => {
@@ -38,7 +47,6 @@ export const TaskItem: React.FC<TaskItemProps> = props => {
   const textRef = useRef<SVGTextElement>(null);
   const [taskItem, setTaskItem] = useState<JSX.Element>(<div />);
   const [isTextInside, setIsTextInside] = useState(true);
-
   useEffect(() => {
     switch (task.typeInternal) {
       case "milestone":
@@ -49,6 +57,18 @@ export const TaskItem: React.FC<TaskItemProps> = props => {
         break;
       case "smalltask":
         setTaskItem(<BarSmall {...props} />);
+        break;
+      case "projectdashboard":
+        setTaskItem(<ProjectDashboard {...props} />);
+        break;
+      case "projecteffort":
+        setTaskItem(<ProjectEffort {...props} />);
+        break;
+      case "projecttaskcategory":
+        setTaskItem(<ProjectTaskCategory {...props} />);
+        break;
+      case "projectworkplan":
+        setTaskItem(<Project {...props} />);
         break;
       default:
         setTaskItem(<Bar {...props} />);
@@ -108,18 +128,25 @@ export const TaskItem: React.FC<TaskItemProps> = props => {
       }}
     >
       {taskItem}
-      <text
-        x={getX()}
-        y={task.y + taskHeight * 0.5}
-        className={
-          isTextInside
-            ? style.barLabel
-            : style.barLabel && style.barLabelOutside
-        }
-        ref={textRef}
-      >
-        {task.name}
-      </text>
+      {task.typeInternal !== "projectdashboard" &&
+        task.typeInternal !== "projecteffort" && (
+          <text
+            x={getX()}
+            y={task.y + taskHeight * 0.5}
+            className={`${
+              isTextInside
+                ? style.barLabel
+                : style.barLabel && style.barLabelOutside
+            }   ${
+              (task.typeInternal === "task" ||
+                task.typeInternal === "projectworkplan") &&
+              style.barLabelTask
+            }    `}
+            ref={textRef}
+          >
+            {task.name}
+          </text>
+        )}
     </g>
   );
 };

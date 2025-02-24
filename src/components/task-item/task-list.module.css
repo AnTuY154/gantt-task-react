@@ -11,6 +11,10 @@
   pointer-events: none;
 }
 
+.barLabelTask {
+  fill: black !important;
+}
+
 .barLabelOutside {
   fill: #555;
   text-anchor: start;

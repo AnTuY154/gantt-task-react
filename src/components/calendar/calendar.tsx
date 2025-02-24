@@ -1,4 +1,4 @@
-import React, { ReactChild } from "react";
+import React, { ReactChild, ReactNode } from "react";
 import { ViewMode } from "../../types/public-types";
 import { TopPartOfCalendar } from "./top-part-of-calendar";
 import {
@@ -6,7 +6,9 @@ import {
   getDaysInMonth,
   getLocalDayOfWeek,
   getLocaleMonth,
+  getLocalMonthYear,
   getWeekNumberISO8601,
+  startOfISOWeek,
 } from "../../helpers/date-helper";
 import { DateSetup } from "../../types/date-setup";
 import styles from "./calendar.module.css";
@@ -20,6 +22,13 @@ export type CalendarProps = {
   columnWidth: number;
   fontFamily: string;
   fontSize: string;
+  highlightToday?: ReactNode;
+  showEffort?: boolean;
+};
+
+const isWeekend = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
 };
 
 export const Calendar: React.FC<CalendarProps> = ({
@@ -31,6 +40,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   columnWidth,
   fontFamily,
   fontSize,
+  highlightToday,
+  showEffort,
 }) => {
   const getCalendarValuesForYear = () => {
     const topValues: ReactChild[] = [];
@@ -165,18 +176,24 @@ export const Calendar: React.FC<CalendarProps> = ({
     return [topValues, bottomValues];
   };
 
+  const getDateToNumber = (date: Date) => {
+    const currentMonth = new Date(date).getMonth() + 1; // getMonth() returns 0-11
+    return currentMonth.toString().padStart(2, "0");
+  };
+
   const getCalendarValuesForWeek = () => {
     const topValues: ReactChild[] = [];
     const bottomValues: ReactChild[] = [];
     let weeksCount: number = 1;
     const topDefaultHeight = headerHeight * 0.5;
     const dates = dateSetup.dates;
+
     for (let i = dates.length - 1; i >= 0; i--) {
       const date = dates[i];
       let topValue = "";
       if (i === 0 || date.getMonth() !== dates[i - 1].getMonth()) {
         // top
-        topValue = `${getLocaleMonth(date, locale)}, ${date.getFullYear()}`;
+        topValue = ` ${date.getFullYear()}.${getDateToNumber(date)}`;
       }
       // bottom
       const bottomValue = `W${getWeekNumberISO8601(date)}`;
@@ -221,9 +238,11 @@ export const Calendar: React.FC<CalendarProps> = ({
     const dates = dateSetup.dates;
     for (let i = 0; i < dates.length; i++) {
       const date = dates[i];
-      const bottomValue = `${getLocalDayOfWeek(date, locale, "short")}, ${date
-        .getDate()
-        .toString()}`;
+      const bottomValue = `${date.getDate().toString()} ${getLocalDayOfWeek(
+        date,
+        locale,
+        "short"
+      )}`;
 
       bottomValues.push(
         <text
@@ -231,6 +250,10 @@ export const Calendar: React.FC<CalendarProps> = ({
           y={headerHeight * 0.8}
           x={columnWidth * i + columnWidth * 0.5}
           className={styles.calendarBottomText}
+          fill={isWeekend(date) ? "red" : "black"}
+          // style={{
+          //   fill: "red !important",
+          // }}
         >
           {bottomValue}
         </text>
@@ -239,7 +262,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         i + 1 !== dates.length &&
         date.getMonth() !== dates[i + 1].getMonth()
       ) {
-        const topValue = getLocaleMonth(date, locale);
+        const topValue = getLocalMonthYear(date, locale);
 
         topValues.push(
           <TopPartOfCalendar
@@ -355,8 +378,104 @@ export const Calendar: React.FC<CalendarProps> = ({
     return [topValues, bottomValues];
   };
 
+  const renderAllEffort = () => {
+    const dates = dateSetup.dates;
+    const effortValue: ReactChild[] = [];
+    const effortText: ReactChild[] = [];
+    for (let i = 0; i < dates.length; i++) {
+      const date = dates[i];
+      effortValue.push(
+        <rect
+          key={`FillBetweenTicks_${date?.getTime()}`}
+          x={columnWidth * (i + +rtl)}
+          y={headerHeight * 0.8 + 15}
+          fill={isWeekend(date) ? "#EDDDDD" : "white"}
+          width={columnWidth - 4}
+          height={30}
+        />
+      );
+
+      effortText.push(
+        <text
+          key={`TextBetweenTicks_${date?.getTime()}`}
+          x={columnWidth * (i + +rtl) + 30}
+          y={headerHeight * 0.8 + 30}
+          textAnchor="middle" // Center align the text horizontally
+          dominantBaseline="middle" // Center align the text vertically
+          fill={isWeekend(date) ? "#E82717" : "black"}
+          style={{
+            fontSize: "12px",
+          }}
+        >
+          8
+        </text>
+      );
+    }
+    return [effortValue, effortText];
+  };
+
+  const getCalendarValuesForWeekDay = () => {
+    const topValues: ReactChild[] = [];
+    const bottomValues: ReactChild[] = [];
+    const topDefaultHeight = headerHeight * 0.5;
+    const dates = dateSetup.dates;
+
+    let currentWeek = -1; // Biến để theo dõi tuần đang hiển thị
+
+    for (let i = 0; i < dates.length; i++) {
+      const date = dates[i];
+
+      // 🔹 Hiển thị ngày trong tuần và thứ (day + dayOfWeek)
+      const dayOfMonth = date.getDate();
+      const dayOfWeek = getLocalDayOfWeek(date, locale, "short"); // Ví dụ: "Mon", "Tue", ...
+
+      const bottomValue = `${dayOfMonth} ${dayOfWeek}`;
+
+      bottomValues.push(
+        <text
+          key={date.getTime()}
+          y={headerHeight * 0.8}
+          x={columnWidth * i + columnWidth * 0.5}
+          className={styles.calendarBottomText}
+          fill={isWeekend(date) ? "red" : "black"}
+        >
+          {bottomValue}
+        </text>
+      );
+
+      // 🔹 Xác định số tuần của năm
+      const weekNumber = parseInt(getWeekNumberISO8601(date));
+
+      // 🔹 Nếu đây là tuần mới, hiển thị số tuần trên calendar
+      if (weekNumber !== currentWeek) {
+        currentWeek = weekNumber;
+        const startOfWeekDate = startOfISOWeek(date);
+        const x1Line = columnWidth * dates.findIndex(d => d.getTime() === startOfWeekDate.getTime()); // Tìm chỉ số ngày đầu tuần
+
+        const x2LineEnd = x1Line + columnWidth * 6; // Thêm 6 cột cho 7 ngày của tuần
+        const xText = (x1Line + x2LineEnd) / 2;
+
+        topValues.push(
+          <TopPartOfCalendar
+            key={`week-${weekNumber}-${date.getFullYear()}`}
+            value={`W${weekNumber}`}
+            x1Line={x1Line}
+            // x2LineEnd={x1Line} // Chỉ cần đánh dấu tuần mới bắt đầu
+            y1Line={0}
+            y2Line={topDefaultHeight}
+            xText={xText} // Đặt text cách một chút
+            yText={topDefaultHeight * 0.9}
+          />
+        );
+      }
+    }
+
+    return [topValues, bottomValues];
+  };
+
   let topValues: ReactChild[] = [];
   let bottomValues: ReactChild[] = [];
+  const [effortValue, effortText] = showEffort ? renderAllEffort() : [];
   switch (dateSetup.viewMode) {
     case ViewMode.Year:
       [topValues, bottomValues] = getCalendarValuesForYear();
@@ -379,6 +498,10 @@ export const Calendar: React.FC<CalendarProps> = ({
       break;
     case ViewMode.Hour:
       [topValues, bottomValues] = getCalendarValuesForHour();
+      break;
+    case ViewMode.WeekDay:
+      [topValues, bottomValues] = getCalendarValuesForWeekDay();
+      break;
   }
   return (
     <g className="calendar" fontSize={fontSize} fontFamily={fontFamily}>
@@ -389,6 +512,9 @@ export const Calendar: React.FC<CalendarProps> = ({
         height={headerHeight}
         className={styles.calendarHeader}
       />
+      {showEffort && effortValue}
+      {showEffort && effortText}
+      {highlightToday}
       {bottomValues} {topValues}
     </g>
   );
